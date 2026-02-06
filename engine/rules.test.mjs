@@ -52,14 +52,20 @@ assert.ok(evaluationIdeal.brightness.score >= 90);
 assert.ok(evaluationIdeal.fire.score >= 90);
 assert.ok(evaluationIdeal.risk.score <= 20);
 assert.equal(evaluationIdeal.redFlags.length, 0);
+assert.equal(evaluationIdeal.hcaLike.available, true);
+assert.ok(evaluationIdeal.hcaLike.score <= 2.5);
 
 const evaluationRisky = evaluateDiamond(riskyDiamond, []);
 assert.equal(evaluationRisky.overall.grade, "F");
 assert.ok(evaluationRisky.risk.score >= 70);
 assert.ok(evaluationRisky.redFlags.length >= 4);
+assert.equal(evaluationRisky.hcaLike.available, true);
+assert.ok(evaluationRisky.hcaLike.score >= 6);
 
 const comparison = compareDiamonds(idealDiamond, riskyDiamond, []);
 const overallWinner = comparison.overall.winner;
 assert.equal(overallWinner, "Diamond A");
+const hcaWinner = comparison.winnerByCategory.find((item) => item.category === "HCA-like")?.winner;
+assert.equal(hcaWinner, "Diamond A");
 
 console.log("All deterministic rules tests passed.");

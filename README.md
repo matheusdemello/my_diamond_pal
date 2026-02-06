@@ -11,6 +11,9 @@ Deterministic, explainable diamond analysis app for GitHub Pages.
   - Brightness score (0-100)
   - Fire score (0-100)
   - Risk score (0-100)
+  - HCA-like deterministic result for round diamonds:
+    - Light Return / Fire / Scintillation / Spread ratings
+    - Lower-is-better total score and recommendation band
   - Maximum Shine Zone checklist
   - Red-flag list
   - Spread/face-up indicator (when carat + diameter/measurements are present)

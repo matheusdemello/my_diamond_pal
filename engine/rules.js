@@ -822,6 +822,184 @@ function normalizeRedFlags(redFlags) {
   return [...new Set(redFlags)];
 }
 
+function ratingFromPerformanceScore(score) {
+  if (score === null || Number.isNaN(score)) return "Unknown";
+  if (score >= 90) return "Excellent";
+  if (score >= 80) return "Very Good";
+  if (score >= 70) return "Good";
+  if (score >= 60) return "Fair";
+  return "Poor";
+}
+
+function hcaPointsFromRating(rating) {
+  const pointsMap = {
+    "Excellent": 0.5,
+    "Very Good": 1.0,
+    "Good": 1.8,
+    "Fair": 2.6,
+    "Poor": 3.6,
+    "Unknown": 2.0,
+  };
+  return pointsMap[rating] ?? 2.0;
+}
+
+function spreadPerformanceScore(spread) {
+  const scoreMap = {
+    "excellent": 92,
+    "balanced": 84,
+    "slightly-hidden": 72,
+    "hidden-weight": 58,
+    "unknown": 70,
+  };
+  return scoreMap[spread.status] ?? 70;
+}
+
+function evaluateScintillationScore(diamond, brightness, fire, risk) {
+  let score = brightness.score * 0.45 + fire.score * 0.35 + (100 - risk.score) * 0.2;
+
+  if (diamond.lowerHalvesPct !== null) {
+    if (inRange(diamond.lowerHalvesPct, RUBRIC.maxShineZone.lowerHalves.bonusMin, RUBRIC.maxShineZone.lowerHalves.bonusMax)) {
+      score += 5;
+    } else if (inRange(diamond.lowerHalvesPct, RUBRIC.maxShineZone.lowerHalves.min, RUBRIC.maxShineZone.lowerHalves.max)) {
+      score += 2;
+    } else {
+      score -= 4;
+    }
+  }
+
+  const sym = toLower(diamond.symmetry);
+  if (sym === "excellent") score += 5;
+  else if (sym === "very good") score += 2;
+  else if (sym === "good") score -= 3;
+  else if (sym) score -= 6;
+
+  if (diamond.crownAngle !== null && diamond.pavilionAngle !== null) {
+    const distance = Math.hypot(
+      diamond.crownAngle - RUBRIC.anglePairing.crownIdeal,
+      diamond.pavilionAngle - RUBRIC.anglePairing.pavilionIdeal
+    );
+    if (distance <= 0.2) score += 5;
+    else if (distance <= RUBRIC.anglePairing.maxDistanceForPenalty) score += 1;
+    else score -= 5;
+  }
+
+  return clampScore(score);
+}
+
+function hcaBandFromTotal(totalScore, redFlags) {
+  if (totalScore === null) {
+    return {
+      band: "Unavailable",
+      recommendation: "HCA-like score is only available for round diamonds in this template.",
+    };
+  }
+
+  if (totalScore <= 2.0 && redFlags.length === 0) {
+    return {
+      band: "Excellent",
+      recommendation: "Excellent candidate in this rejection-style model.",
+    };
+  }
+
+  if (totalScore <= 2.5) {
+    return {
+      band: "Very Good",
+      recommendation: "Very strong candidate; verify with imagery and vendor data.",
+    };
+  }
+
+  if (totalScore <= 4.0) {
+    return {
+      band: "Good",
+      recommendation: "Worth considering with careful visual checks.",
+    };
+  }
+
+  if (totalScore <= 6.0) {
+    return {
+      band: "Fair",
+      recommendation: "Borderline option; compare against better geometry candidates.",
+    };
+  }
+
+  return {
+    band: "Poor",
+    recommendation: "Reject in this model and keep searching.",
+  };
+}
+
+function evaluateHcaLike(diamond, brightness, fire, risk, spread, redFlags) {
+  const isRound = toLower(diamond.shape) === "round";
+  if (!isRound) {
+    return {
+      available: false,
+      model: "HCA-like deterministic template",
+      scale: "Lower is better",
+      score: null,
+      band: "Unavailable",
+      recommendation: "HCA-like score is only available for round diamonds in this template.",
+      components: [],
+      explanation: "Round-only mode is used to keep this output aligned with angle-based rejection logic.",
+    };
+  }
+
+  const leakagePenalty = redFlags.some((flag) => flag.toLowerCase().includes("leakage")) ? 12 : 0;
+  const depthPenalty = redFlags.some((flag) => flag.toLowerCase().includes("depth is outside avoid threshold")) ? 6 : 0;
+  const lightReturnScore = clampScore(brightness.score - leakagePenalty - depthPenalty);
+  const fireScore = fire.score;
+  const scintillationScore = evaluateScintillationScore(diamond, brightness, fire, risk);
+  const spreadScore = spreadPerformanceScore(spread);
+
+  const components = [
+    {
+      name: "Light Return",
+      score: lightReturnScore,
+      rating: ratingFromPerformanceScore(lightReturnScore),
+      points: hcaPointsFromRating(ratingFromPerformanceScore(lightReturnScore)),
+      threshold: ">=90 Excellent, 80-89 Very Good, 70-79 Good, 60-69 Fair, <60 Poor",
+      explanation: "Derived from brightness, with extra penalty if leakage/depth red flags were triggered.",
+    },
+    {
+      name: "Fire",
+      score: fireScore,
+      rating: ratingFromPerformanceScore(fireScore),
+      points: hcaPointsFromRating(ratingFromPerformanceScore(fireScore)),
+      threshold: ">=90 Excellent, 80-89 Very Good, 70-79 Good, 60-69 Fair, <60 Poor",
+      explanation: "Derived from crown/table balance and facet proportion effects.",
+    },
+    {
+      name: "Scintillation",
+      score: scintillationScore,
+      rating: ratingFromPerformanceScore(scintillationScore),
+      points: hcaPointsFromRating(ratingFromPerformanceScore(scintillationScore)),
+      threshold: ">=90 Excellent, 80-89 Very Good, 70-79 Good, 60-69 Fair, <60 Poor",
+      explanation: "Derived from brightness/fire blend plus lower-halves, symmetry, and angle pairing.",
+    },
+    {
+      name: "Spread",
+      score: spreadScore,
+      rating: ratingFromPerformanceScore(spreadScore),
+      points: hcaPointsFromRating(ratingFromPerformanceScore(spreadScore)),
+      threshold: "Mapped from spread status: excellent/balanced/slightly-hidden/hidden-weight/unknown",
+      explanation: "Derived from face-up diameter efficiency for the given carat weight.",
+    },
+  ];
+
+  const total = Number(components.reduce((sum, item) => sum + item.points, 0).toFixed(1));
+  const band = hcaBandFromTotal(total, redFlags);
+
+  return {
+    available: true,
+    model: "HCA-like deterministic template",
+    scale: "Lower is better",
+    score: total,
+    band: band.band,
+    recommendation: band.recommendation,
+    components,
+    explanation: "This is an HCA-like template output and not the original patented HCA calculation.",
+  };
+}
+
 function getTradeoffs(evaluation) {
   const pros = [];
   const cons = [];
@@ -906,6 +1084,47 @@ function compareValue(left, right) {
   };
 }
 
+function compareHcaLike(left, right) {
+  if (!left.hcaLike.available && !right.hcaLike.available) {
+    return {
+      category: "HCA-like",
+      winner: "Unavailable for both",
+      difference: 0,
+    };
+  }
+
+  if (left.hcaLike.available && !right.hcaLike.available) {
+    return {
+      category: "HCA-like",
+      winner: "Diamond A",
+      difference: 0,
+    };
+  }
+
+  if (!left.hcaLike.available && right.hcaLike.available) {
+    return {
+      category: "HCA-like",
+      winner: "Diamond B",
+      difference: 0,
+    };
+  }
+
+  const diff = Math.abs(left.hcaLike.score - right.hcaLike.score);
+  if (diff <= 0.3) {
+    return {
+      category: "HCA-like",
+      winner: "Too close to call",
+      difference: Number(diff.toFixed(1)),
+    };
+  }
+
+  return {
+    category: "HCA-like",
+    winner: left.hcaLike.score < right.hcaLike.score ? "Diamond A" : "Diamond B",
+    difference: Number(diff.toFixed(1)),
+  };
+}
+
 export function evaluateDiamond(inputDiamond, benchmarks = []) {
   const diamond = normalizeDiamond(inputDiamond);
   const redFlags = [];
@@ -917,6 +1136,7 @@ export function evaluateDiamond(inputDiamond, benchmarks = []) {
   const spread = evaluateSpread(diamond);
   const value = evaluateValue(diamond, benchmarks);
   const uniqueFlags = normalizeRedFlags(redFlags);
+  const hcaLike = evaluateHcaLike(diamond, brightness, fire, risk, spread, uniqueFlags);
 
   const majorRedFlag =
     diamond.pavilionAngle !== null &&
@@ -949,6 +1169,7 @@ export function evaluateDiamond(inputDiamond, benchmarks = []) {
     redFlags: uniqueFlags,
     spread,
     value,
+    hcaLike,
   };
 
   evaluation.tradeoffs = getTradeoffs(evaluation);
@@ -963,6 +1184,7 @@ export function compareDiamonds(firstInput, secondInput, benchmarks = []) {
     compareCategory("Brightness", first.brightness.score, second.brightness.score, false),
     compareCategory("Fire", first.fire.score, second.fire.score, false),
     compareCategory("Risk", first.risk.score, second.risk.score, true),
+    compareHcaLike(first, second),
     compareValue(first, second),
   ];
 
