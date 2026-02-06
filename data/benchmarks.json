@@ -1,0 +1,69 @@
+{
+  "metadata": {
+    "currency": "USD",
+    "updated_on": "2026-02-06",
+    "description": "Local deterministic reference bands (edit freely)."
+  },
+  "bands": [
+    {
+      "shape": "Round",
+      "carat_min": 0.7,
+      "carat_max": 0.89,
+      "color_best": "D",
+      "color_worst": "H",
+      "clarity_best": "VVS1",
+      "clarity_worst": "SI1",
+      "cut_grades": ["Excellent", "Ideal"],
+      "price_per_carat_min": 3400,
+      "price_per_carat_max": 5200
+    },
+    {
+      "shape": "Round",
+      "carat_min": 0.9,
+      "carat_max": 1.09,
+      "color_best": "D",
+      "color_worst": "H",
+      "clarity_best": "VVS1",
+      "clarity_worst": "SI1",
+      "cut_grades": ["Excellent", "Ideal"],
+      "price_per_carat_min": 5200,
+      "price_per_carat_max": 8200
+    },
+    {
+      "shape": "Round",
+      "carat_min": 1.1,
+      "carat_max": 1.49,
+      "color_best": "D",
+      "color_worst": "I",
+      "clarity_best": "IF",
+      "clarity_worst": "SI1",
+      "cut_grades": ["Excellent", "Ideal"],
+      "price_per_carat_min": 7000,
+      "price_per_carat_max": 11000
+    },
+    {
+      "shape": "Oval",
+      "carat_min": 0.9,
+      "carat_max": 1.29,
+      "color_best": "D",
+      "color_worst": "H",
+      "clarity_best": "VVS1",
+      "clarity_worst": "SI1",
+      "cut_grades": ["Excellent", "Very Good", "Ideal"],
+      "price_per_carat_min": 4200,
+      "price_per_carat_max": 7300
+    },
+    {
+      "shape": "Princess",
+      "carat_min": 0.9,
+      "carat_max": 1.29,
+      "color_best": "D",
+      "color_worst": "H",
+      "clarity_best": "VVS1",
+      "clarity_worst": "SI1",
+      "cut_grades": ["Excellent", "Very Good", "Ideal"],
+      "price_per_carat_min": 3900,
+      "price_per_carat_max": 6900
+    }
+  ]
+}

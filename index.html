@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Diamond Shine Checker</title>
+    <meta
+      name="description"
+      content="Deterministic diamond shine analysis with explainable fire, brightness, risk, and value scoring."
+    />
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bg-orb bg-orb-a" aria-hidden="true"></div>
+    <div class="bg-orb bg-orb-b" aria-hidden="true"></div>
+
+    <main class="page">
+      <header class="hero">
+        <p class="eyebrow">Deterministic Rubric Engine</p>
+        <h1>Diamond Shine Checker</h1>
+        <p class="subtitle">
+          Transparent, fixed-rule analysis for brightness, fire, risk, and reference value.
+        </p>
+      </header>
+
+      <section class="tabs" aria-label="Checker modes">
+        <div class="tab-list" role="tablist" aria-label="Diamond analysis modes">
+          <button class="tab-btn is-active" id="tab-single" role="tab" aria-controls="panel-single" aria-selected="true" data-tab="single">
+            Check 1 Diamond
+          </button>
+          <button class="tab-btn" id="tab-compare" role="tab" aria-controls="panel-compare" aria-selected="false" data-tab="compare">
+            Compare 2 Diamonds
+          </button>
+        </div>
+
+        <section id="panel-single" class="tab-panel is-active" role="tabpanel" aria-labelledby="tab-single" tabindex="0">
+          <form id="single-form" class="diamond-form" novalidate>
+            <div class="form-header">
+              <h2>Single Diamond Input</h2>
+            </div>
+            <div id="single-fields" class="form-grid"></div>
+            <button class="action-btn" type="submit">Evaluate Diamond</button>
+          </form>
+          <div id="single-result" class="result-wrap" aria-live="polite"></div>
+        </section>
+
+        <section id="panel-compare" class="tab-panel" role="tabpanel" aria-labelledby="tab-compare" tabindex="0">
+          <form id="compare-form" class="diamond-form" novalidate>
+            <div class="form-header">
+              <h2>Compare Two Diamonds</h2>
+            </div>
+            <div class="compare-grid">
+              <fieldset class="compare-fieldset">
+                <legend>Diamond A</legend>
+                <div id="compare-a-fields" class="form-grid"></div>
+              </fieldset>
+              <fieldset class="compare-fieldset">
+                <legend>Diamond B</legend>
+                <div id="compare-b-fields" class="form-grid"></div>
+              </fieldset>
+            </div>
+            <button class="action-btn" type="submit">Compare Diamonds</button>
+          </form>
+          <div id="compare-result" class="result-wrap" aria-live="polite"></div>
+        </section>
+      </section>
+    </main>
+
+    <template id="result-card-template">
+      <article class="report-card">
+        <div class="report-top">
+          <div>
+            <p class="label">Shine Grade</p>
+            <p class="grade"></p>
+          </div>
+          <div>
+            <p class="label">Overall Score</p>
+            <p class="score"></p>
+          </div>
+        </div>
+
+        <div class="meter-group"></div>
+
+        <section class="status-block">
+          <h4>Maximum Shine Zone</h4>
+          <ul class="checklist"></ul>
+        </section>
+
+        <section class="status-block">
+          <h4>Red Flags</h4>
+          <ul class="red-flags"></ul>
+        </section>
+
+        <section class="status-block">
+          <h4>Spread / Face-up</h4>
+          <p class="spread"></p>
+        </section>
+
+        <section class="status-block">
+          <h4>Value Check</h4>
+          <p class="value"></p>
+        </section>
+
+        <details class="explain">
+          <summary>Explain my result</summary>
+          <div class="explain-content"></div>
+        </details>
+      </article>
+    </template>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
