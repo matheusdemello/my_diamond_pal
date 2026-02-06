@@ -741,6 +741,16 @@ function evaluateValue(diamond, benchmarks) {
     };
   }
 
+  if (diamond.currency && diamond.currency !== "USD") {
+    return {
+      status: "currency-unsupported",
+      label: "No USD reference for selected currency",
+      explanation: "Local benchmark table is USD-only. Convert the input price to USD to compare value.",
+      benchmark: null,
+      pricePerCarat: Number((diamond.price / diamond.carat).toFixed(0)),
+    };
+  }
+
   const band = matchBenchmark(diamond, benchmarks);
   const pricePerCarat = diamond.price / diamond.carat;
 
@@ -1058,10 +1068,29 @@ function valueRank(status) {
 }
 
 function compareValue(left, right) {
-  if (left.value.status === "no-reference" && right.value.status === "no-reference") {
+  const leftComparable = ["below", "fair", "above"].includes(left.value.status);
+  const rightComparable = ["below", "fair", "above"].includes(right.value.status);
+
+  if (!leftComparable && !rightComparable) {
     return {
       category: "Value",
-      winner: "No reference for either diamond",
+      winner: "No comparable benchmark",
+      difference: 0,
+    };
+  }
+
+  if (leftComparable && !rightComparable) {
+    return {
+      category: "Value",
+      winner: "Diamond A (only comparable one)",
+      difference: 0,
+    };
+  }
+
+  if (!leftComparable && rightComparable) {
+    return {
+      category: "Value",
+      winner: "Diamond B (only comparable one)",
       difference: 0,
     };
   }
@@ -1085,26 +1114,10 @@ function compareValue(left, right) {
 }
 
 function compareHcaLike(left, right) {
-  if (!left.hcaLike.available && !right.hcaLike.available) {
+  if (!left.hcaLike.available || !right.hcaLike.available) {
     return {
       category: "HCA-like",
-      winner: "Unavailable for both",
-      difference: 0,
-    };
-  }
-
-  if (left.hcaLike.available && !right.hcaLike.available) {
-    return {
-      category: "HCA-like",
-      winner: "Diamond A",
-      difference: 0,
-    };
-  }
-
-  if (!left.hcaLike.available && right.hcaLike.available) {
-    return {
-      category: "HCA-like",
-      winner: "Diamond B",
+      winner: "N/A (round-only metric)",
       difference: 0,
     };
   }

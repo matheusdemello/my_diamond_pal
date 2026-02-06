@@ -18,6 +18,7 @@ Deterministic, explainable diamond analysis app for GitHub Pages.
   - Red-flag list
   - Spread/face-up indicator (when carat + diameter/measurements are present)
   - Value check from local editable benchmarks
+- Value benchmark is USD-only (non-USD inputs are flagged as non-comparable)
 - Research-based screening panel (round):
   - GIA proportion screening ranges
   - HCA-style reject threshold (`<= 2.5` target)
@@ -35,6 +36,13 @@ The form now starts with a practical default profile to speed up testing:
 - Girdle Medium, Culet None
 - Star 50, Lower Halves 78
 - Polish/Symmetry Excellent, Fluorescence None
+- Use `Start Real Evaluation` / `Clear` actions to remove sample values quickly.
+
+## Sample vs Real Mode
+
+- The app loads a sample profile for convenience.
+- If inputs match the built-in sample profile, results are marked as `Sample-Like`.
+- For purchasing decisions, replace all key fields with certificate values.
 
 ## Maximum Shine Zone Rubric
 

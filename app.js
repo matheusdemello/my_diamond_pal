@@ -38,8 +38,6 @@ const benchmarkState = {
   loadError: null,
 };
 
-const SHOW_EXPLAIN = false;
-
 const RESEARCH_CRITERIA = {
   roundScreening: {
     table: { min: 52, max: 62 },
@@ -59,6 +57,32 @@ const INPUT_LIMITS = {
   lowerHalvesPct: { min: 0, max: 100, label: "Lower halves %" },
   avgDiameterMm: { min: 2, max: 20, label: "Average diameter (mm)" },
   price: { min: 0, max: 100000000, label: "Price" },
+};
+
+const SAMPLE_PROFILE = {
+  shape: "Round",
+  carat: 1.0,
+  lab: "GIA",
+  cutGrade: "Excellent",
+  color: "H",
+  clarity: "VS2",
+  tablePct: 56.0,
+  depthPct: 61.8,
+  crownAngle: 34.5,
+  pavilionAngle: 40.8,
+  girdle: "Medium",
+  culet: "None",
+  starPct: 50,
+  lowerHalvesPct: 78,
+  polish: "Excellent",
+  symmetry: "Excellent",
+  fluorescence: "None",
+  avgDiameterMm: null,
+  measurements: "",
+  price: null,
+  currency: "USD",
+  hazyMilky: false,
+  cloudsNote: "",
 };
 
 function createField(prefix, field) {
@@ -96,7 +120,7 @@ function createField(prefix, field) {
       option.textContent = optionValue;
       input.appendChild(option);
     });
-    if (field.defaultValue) input.value = field.defaultValue;
+    if (field.defaultValue !== undefined) input.value = field.defaultValue;
   } else {
     input = document.createElement("input");
     input.type = field.type;
@@ -146,6 +170,68 @@ function getValue(form, prefix, id) {
   return form.elements[`${prefix}_${id}`];
 }
 
+function numericNear(a, b, tolerance = 0.01) {
+  if (a === null || b === null) return a === b;
+  if (typeof a !== "number" || typeof b !== "number") return false;
+  return Math.abs(a - b) <= tolerance;
+}
+
+function matchesSampleProfile(diamond) {
+  const requiredMatches = [
+    diamond.shape === SAMPLE_PROFILE.shape,
+    numericNear(diamond.carat, SAMPLE_PROFILE.carat),
+    normalizeText(diamond.lab).toUpperCase() === SAMPLE_PROFILE.lab,
+    normalizeText(diamond.cutGrade).toUpperCase() === SAMPLE_PROFILE.cutGrade.toUpperCase(),
+    diamond.color === SAMPLE_PROFILE.color,
+    diamond.clarity === SAMPLE_PROFILE.clarity,
+    numericNear(diamond.tablePct, SAMPLE_PROFILE.tablePct),
+    numericNear(diamond.depthPct, SAMPLE_PROFILE.depthPct),
+    numericNear(diamond.crownAngle, SAMPLE_PROFILE.crownAngle),
+    numericNear(diamond.pavilionAngle, SAMPLE_PROFILE.pavilionAngle),
+    normalizeText(diamond.girdle).toUpperCase() === SAMPLE_PROFILE.girdle.toUpperCase(),
+    normalizeText(diamond.culet).toUpperCase() === SAMPLE_PROFILE.culet.toUpperCase(),
+    numericNear(diamond.starPct, SAMPLE_PROFILE.starPct),
+    numericNear(diamond.lowerHalvesPct, SAMPLE_PROFILE.lowerHalvesPct),
+    normalizeText(diamond.polish).toUpperCase() === SAMPLE_PROFILE.polish.toUpperCase(),
+    normalizeText(diamond.symmetry).toUpperCase() === SAMPLE_PROFILE.symmetry.toUpperCase(),
+    normalizeText(diamond.fluorescence).toUpperCase() === SAMPLE_PROFILE.fluorescence.toUpperCase(),
+  ];
+
+  return requiredMatches.every(Boolean);
+}
+
+function setFieldValue(form, prefix, id, value) {
+  const field = getValue(form, prefix, id);
+  if (!field) return;
+  if (field.type === "checkbox") {
+    field.checked = Boolean(value);
+    return;
+  }
+  field.value = value === null || value === undefined ? "" : String(value);
+}
+
+function applySampleProfile(form, prefix) {
+  Object.entries(SAMPLE_PROFILE).forEach(([key, value]) => {
+    setFieldValue(form, prefix, key, value);
+  });
+}
+
+function clearDiamondFields(form, prefix) {
+  FIELDS.forEach((field) => {
+    const input = getValue(form, prefix, field.id);
+    if (!input) return;
+    if (field.type === "checkbox") {
+      input.checked = false;
+      return;
+    }
+    if (field.type === "select") {
+      input.selectedIndex = 0;
+      return;
+    }
+    input.value = "";
+  });
+}
+
 function readDiamond(form, prefix) {
   const measurements = normalizeText(getValue(form, prefix, "measurements")?.value);
   const typedAvgDiameter = parseNumber(getValue(form, prefix, "avgDiameterMm")?.value);
@@ -176,6 +262,7 @@ function readDiamond(form, prefix) {
     hazyMilky: Boolean(getValue(form, prefix, "hazyMilky")?.checked),
     cloudsNote: normalizeText(getValue(form, prefix, "cloudsNote")?.value),
     _parsedDiameterFromMeasurements: typedAvgDiameter === null && parsedAvgDiameter !== null,
+    _sampleProfileLikely: false,
   };
 }
 
@@ -190,9 +277,15 @@ function validateDiamondInput(diamond, label) {
   const errors = [];
   const warnings = [];
   const notes = [];
+  const sampleProfileLikely = matchesSampleProfile(diamond);
+  diamond._sampleProfileLikely = sampleProfileLikely;
 
   if (diamond._parsedDiameterFromMeasurements) {
     notes.push(`Average diameter was auto-derived from measurements: ${diamond.avgDiameterMm} mm.`);
+  }
+
+  if (sampleProfileLikely) {
+    warnings.push("Input matches the built-in sample profile. Replace with certificate values for purchase decisions.");
   }
 
   if (diamond.tablePct === null) errors.push("Table % is required.");
@@ -222,6 +315,10 @@ function validateDiamondInput(diamond, label) {
     warnings.push("Price missing: value check will be skipped.");
   }
 
+  if (diamond.currency && diamond.currency !== "USD") {
+    warnings.push("Benchmarks are USD-only. Value comparison will be unavailable for non-USD currency.");
+  }
+
   if (diamond.avgDiameterMm === null && !diamond.measurements) {
     warnings.push("No diameter or measurements provided: spread analysis may be limited.");
   }
@@ -242,7 +339,7 @@ function validateDiamondInput(diamond, label) {
     warnings.push("Hazy/milky was checked and will strongly increase risk.");
   }
 
-  return { label, errors, warnings, notes };
+  return { label, errors, warnings, notes, sampleProfileLikely };
 }
 
 function gradeClass(status) {
@@ -250,12 +347,6 @@ function gradeClass(status) {
   if (status === "near") return "status-near";
   if (status === "fail") return "status-fail";
   return "";
-}
-
-function riskToneClass(riskScore) {
-  if (riskScore <= 25) return "tone-good";
-  if (riskScore <= 45) return "tone-warn";
-  return "tone-bad";
 }
 
 function hcaToneClass(score) {
@@ -268,6 +359,7 @@ function hcaToneClass(score) {
 function decisionFromEvaluation(evaluation) {
   const hcaScore = evaluation.hcaLike?.score ?? null;
   const redFlagCount = evaluation.redFlags.length;
+  const isRound = String(evaluation.input.shape || "").toLowerCase() === "round";
 
   if (evaluation.overall.grade === "F" || redFlagCount >= 3 || (hcaScore !== null && hcaScore > 4.5)) {
     return {
@@ -285,6 +377,14 @@ function decisionFromEvaluation(evaluation) {
     };
   }
 
+  if (!isRound && evaluation.risk.score <= 35 && redFlagCount <= 1) {
+    return {
+      title: "Promising Fancy Shape",
+      subtitle: "Not eligible for HCA-like scoring; use image/video verification next.",
+      toneClass: "tone-warn",
+    };
+  }
+
   return {
     title: "Promising, Verify Carefully",
     subtitle: "Worth shortlist review with imagery and vendor confirmation.",
@@ -298,7 +398,7 @@ function formatMetric(value, digits = 1) {
   return value.toFixed(digits);
 }
 
-function buildResultHero(evaluation, labelText) {
+function buildResultHero(evaluation, labelText, inputDiagnostics = null) {
   const hero = document.createElement("section");
   hero.className = "result-hero";
 
@@ -311,6 +411,10 @@ function buildResultHero(evaluation, labelText) {
   label.className = "label";
   label.textContent = labelText;
 
+  const mode = document.createElement("p");
+  mode.className = `mode-tag ${inputDiagnostics?.sampleProfileLikely ? "tone-warn" : "tone-good"}`;
+  mode.textContent = inputDiagnostics?.sampleProfileLikely ? "Evaluation Mode: Sample-Like" : "Evaluation Mode: User Input";
+
   const title = document.createElement("h3");
   title.className = `hero-verdict ${decision.toneClass}`;
   title.textContent = decision.title;
@@ -319,7 +423,7 @@ function buildResultHero(evaluation, labelText) {
   subtitle.className = "hero-subtitle";
   subtitle.textContent = decision.subtitle;
 
-  left.append(label, title, subtitle);
+  left.append(label, mode, title, subtitle);
 
   const right = document.createElement("div");
   right.className = "result-hero-right";
@@ -414,31 +518,6 @@ function formatChecklistItem(item) {
   return `${item.label}: ${actual} (target ${item.target})`;
 }
 
-function renderExplainSection(title, components = []) {
-  const section = document.createElement("section");
-  section.className = "explain-section";
-
-  const heading = document.createElement("h5");
-  heading.textContent = title;
-
-  const list = document.createElement("ul");
-  if (!components.length) {
-    const item = document.createElement("li");
-    item.textContent = "No contributing components recorded.";
-    list.appendChild(item);
-  }
-
-  components.forEach((entry) => {
-    const item = document.createElement("li");
-    const delta = entry.delta > 0 ? `+${entry.delta}` : `${entry.delta}`;
-    item.textContent = `${delta} | threshold: ${entry.threshold} | ${entry.explanation}`;
-    list.appendChild(item);
-  });
-
-  section.append(heading, list);
-  return section;
-}
-
 function buildQuickReadBlock(evaluation) {
   const block = document.createElement("section");
   block.className = "status-block quick-read";
@@ -502,7 +581,7 @@ function buildResearchCriteriaBlock(evaluation) {
 
   const note = document.createElement("p");
   note.className = "note";
-  note.textContent = "Uses GIA proportion screening ranges plus HCA-style rejection threshold.";
+  note.textContent = "External screen only: uses broader GIA ranges + HCA-style threshold. Final verdict still follows the internal strict rubric.";
   block.appendChild(note);
 
   const list = document.createElement("ul");
@@ -510,6 +589,14 @@ function buildResearchCriteriaBlock(evaluation) {
 
   const isRound = String(evaluation.input.shape || "").toLowerCase() === "round";
   appendCriteriaItem(list, "Shape", isRound ? "pass" : "fail", isRound ? "Round" : "Non-round");
+
+  if (!isRound) {
+    appendCriteriaItem(list, "Round-only ranges", "unknown", "Skipped for fancy shapes");
+    const internalStatus = evaluation.passMaximumShineZone ? "pass" : "fail";
+    appendCriteriaItem(list, "Internal max-shine checklist", internalStatus, evaluation.passMaximumShineZone ? "Pass" : "One or more misses");
+    block.appendChild(list);
+    return block;
+  }
 
   const tableRange = RESEARCH_CRITERIA.roundScreening.table;
   const tableStatus = evaluateRangeStatus(evaluation.input.tablePct, tableRange.min, tableRange.max, 0.4);
@@ -641,7 +728,7 @@ function renderReportCard(evaluation, labelText = "Diamond", inputDiagnostics = 
   const card = fragment.querySelector(".report-card");
 
   const reportTop = card.querySelector(".report-top");
-  reportTop.replaceWith(buildResultHero(evaluation, labelText));
+  reportTop.replaceWith(buildResultHero(evaluation, labelText, inputDiagnostics));
 
   const meterGroup = card.querySelector(".meter-group");
   meterGroup.appendChild(renderMeterRow("Brightness", evaluation.brightness.score));
@@ -662,7 +749,7 @@ function renderReportCard(evaluation, labelText = "Diamond", inputDiagnostics = 
     researchCriteriaBlock.after(qualityBlock);
   }
 
-  const checklist = card.querySelector(".checklist");
+  const checklist = card.querySelector(".shine-checklist");
   const verdict = document.createElement("li");
   verdict.className = evaluation.passMaximumShineZone ? "status-pass" : "status-fail";
   verdict.textContent = evaluation.passMaximumShineZone
@@ -703,35 +790,6 @@ function renderReportCard(evaluation, labelText = "Diamond", inputDiagnostics = 
   const value = evaluation.value;
   const ppc = value.pricePerCarat ? `${value.pricePerCarat.toLocaleString()} ${evaluation.input.currency}/ct` : "n/a";
   valueNode.textContent = `${value.label} • ${ppc}. ${value.explanation}`;
-
-  const explainWrap = card.querySelector(".explain");
-  if (SHOW_EXPLAIN && explainWrap) {
-    const explain = card.querySelector(".explain-content");
-    const overview = document.createElement("section");
-    overview.className = "explain-section";
-    const heading = document.createElement("h5");
-    heading.textContent = "Overall";
-    const list = document.createElement("ul");
-    const overallItem = document.createElement("li");
-    overallItem.textContent = `${evaluation.overall.explanation} Thresholds: ${evaluation.overall.thresholds}.`;
-    list.appendChild(overallItem);
-    overview.append(heading, list);
-
-    explain.appendChild(overview);
-    explain.appendChild(renderExplainSection("Brightness components", evaluation.brightness.components));
-    explain.appendChild(renderExplainSection("Fire components", evaluation.fire.components));
-    explain.appendChild(renderExplainSection("Risk components", evaluation.risk.components));
-    explain.appendChild(renderExplainSection(
-      "HCA-like components",
-      evaluation.hcaLike.components.map((item) => ({
-        delta: -item.points,
-        threshold: item.threshold,
-        explanation: `${item.name}: ${item.explanation}`,
-      }))
-    ));
-  } else {
-    explainWrap?.remove();
-  }
 
   return fragment;
 }
@@ -809,18 +867,37 @@ function bindTabs() {
     compare: document.getElementById("panel-compare"),
   };
 
-  buttons.forEach((button) => {
-    button.addEventListener("click", () => {
-      const tab = button.dataset.tab;
-      buttons.forEach((btn) => {
-        const active = btn === button;
-        btn.classList.toggle("is-active", active);
-        btn.setAttribute("aria-selected", String(active));
-      });
+  const activateTab = (button) => {
+    const tab = button.dataset.tab;
+    buttons.forEach((btn) => {
+      const active = btn === button;
+      btn.classList.toggle("is-active", active);
+      btn.setAttribute("aria-selected", String(active));
+      if (active) btn.focus();
+    });
 
-      Object.entries(panels).forEach(([key, panel]) => {
-        panel.classList.toggle("is-active", key === tab);
-      });
+    Object.entries(panels).forEach(([key, panel]) => {
+      panel.classList.toggle("is-active", key === tab);
+    });
+  };
+
+  buttons.forEach((button) => {
+    button.addEventListener("click", () => activateTab(button));
+    button.addEventListener("keydown", (event) => {
+      const currentIndex = buttons.indexOf(button);
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        activateTab(buttons[(currentIndex + 1) % buttons.length]);
+      } else if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        activateTab(buttons[(currentIndex - 1 + buttons.length) % buttons.length]);
+      } else if (event.key === "Home") {
+        event.preventDefault();
+        activateTab(buttons[0]);
+      } else if (event.key === "End") {
+        event.preventDefault();
+        activateTab(buttons[buttons.length - 1]);
+      }
     });
   });
 }
@@ -840,13 +917,40 @@ async function loadBenchmarks() {
   }
 }
 
+function bindFormUtilities() {
+  const singleForm = document.getElementById("single-form");
+  const compareForm = document.getElementById("compare-form");
+  if (!singleForm || !compareForm) return;
+
+  const singleUseSample = document.getElementById("single-use-sample");
+  const singleClear = document.getElementById("single-clear");
+  const compareAUseSample = document.getElementById("compare-a-use-sample");
+  const compareAClear = document.getElementById("compare-a-clear");
+  const compareBUseSample = document.getElementById("compare-b-use-sample");
+  const compareBClear = document.getElementById("compare-b-clear");
+
+  singleUseSample?.addEventListener("click", () => applySampleProfile(singleForm, "single"));
+  singleClear?.addEventListener("click", () => clearDiamondFields(singleForm, "single"));
+  compareAUseSample?.addEventListener("click", () => applySampleProfile(compareForm, "a"));
+  compareAClear?.addEventListener("click", () => clearDiamondFields(compareForm, "a"));
+  compareBUseSample?.addEventListener("click", () => applySampleProfile(compareForm, "b"));
+  compareBClear?.addEventListener("click", () => clearDiamondFields(compareForm, "b"));
+}
+
 function init() {
   renderFields("single-fields", "single");
   renderFields("compare-a-fields", "a");
   renderFields("compare-b-fields", "b");
+  const singleForm = document.getElementById("single-form");
+  const compareForm = document.getElementById("compare-form");
+  if (singleForm) applySampleProfile(singleForm, "single");
+  if (compareForm) {
+    applySampleProfile(compareForm, "a");
+    applySampleProfile(compareForm, "b");
+  }
+  bindFormUtilities();
   bindTabs();
 
-  const singleForm = document.getElementById("single-form");
   const singleResult = document.getElementById("single-result");
   if (!singleForm || !singleResult) return;
   singleForm.addEventListener("submit", (event) => {
@@ -877,7 +981,6 @@ function init() {
     }
   });
 
-  const compareForm = document.getElementById("compare-form");
   if (!compareForm) return;
   compareForm.addEventListener("submit", (event) => {
     event.preventDefault();

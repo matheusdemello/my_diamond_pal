@@ -40,6 +40,11 @@
               <h2>Single Diamond Input</h2>
             </div>
             <div id="single-fields" class="form-grid"></div>
+            <div class="form-utilities">
+              <button class="secondary-btn" id="single-use-sample" type="button">Load Sample Values</button>
+              <button class="secondary-btn" id="single-clear" type="button">Start Real Evaluation</button>
+              <p class="form-hint">Sample values are for demo only. Replace with certificate values before buying.</p>
+            </div>
             <button class="action-btn" type="submit">Evaluate Diamond</button>
           </form>
           <div id="single-result" class="result-wrap" aria-live="polite"></div>
@@ -59,6 +64,13 @@
                 <legend>Diamond B</legend>
                 <div id="compare-b-fields" class="form-grid"></div>
               </fieldset>
+            </div>
+            <div class="form-utilities">
+              <button class="secondary-btn" id="compare-a-use-sample" type="button">Load Sample A</button>
+              <button class="secondary-btn" id="compare-a-clear" type="button">Clear A</button>
+              <button class="secondary-btn" id="compare-b-use-sample" type="button">Load Sample B</button>
+              <button class="secondary-btn" id="compare-b-clear" type="button">Clear B</button>
+              <p class="form-hint">Sample profiles help learn the tool. Use real lab-report values for decisions.</p>
             </div>
             <button class="action-btn" type="submit">Compare Diamonds</button>
           </form>
@@ -84,7 +96,7 @@
 
         <section class="status-block">
           <h4>Maximum Shine Zone</h4>
-          <ul class="checklist"></ul>
+          <ul class="checklist shine-checklist"></ul>
         </section>
 
         <section class="status-block">
