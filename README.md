@@ -1,4 +1,4 @@
-# Diamond Shine Checker
+# My Diamond Pal
 
 Deterministic, explainable diamond analysis app for GitHub Pages.
 
