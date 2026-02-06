@@ -2,31 +2,32 @@ import { evaluateDiamond, compareDiamonds } from "./engine/rules.js";
 
 const FIELDS = [
   { id: "shape", label: "Shape", type: "select", options: ["Round", "Princess", "Oval", "Cushion", "Emerald", "Radiant", "Pear", "Marquise"], defaultValue: "Round" },
-  { id: "carat", label: "Carat", type: "number", step: "0.01", min: 0.1, max: 20, placeholder: "1.00" },
-  { id: "lab", label: "Lab", type: "select", options: ["GIA", "AGS", "IGI", "HRD", "Other"] },
-  { id: "cutGrade", label: "Cut Grade", type: "select", options: ["Excellent", "Ideal", "Very Good", "Good", "Fair"] },
-  { id: "color", label: "Color", type: "select", options: ["D", "E", "F", "G", "H", "I", "J", "K"] },
-  { id: "clarity", label: "Clarity", type: "select", options: ["FL", "IF", "VVS1", "VVS2", "VS1", "VS2", "SI1", "SI2", "I1"] },
-  { id: "tablePct", label: "Table %", type: "number", step: "0.1", min: 45, max: 75, required: true, placeholder: "56.0" },
-  { id: "depthPct", label: "Depth %", type: "number", step: "0.1", min: 50, max: 75, required: true, placeholder: "61.8" },
-  { id: "crownAngle", label: "Crown Angle", type: "number", step: "0.1", min: 25, max: 45, required: true, placeholder: "34.5" },
-  { id: "pavilionAngle", label: "Pavilion Angle", type: "number", step: "0.1", min: 38, max: 43, required: true, placeholder: "40.8" },
+  { id: "carat", label: "Carat", type: "number", step: "0.01", min: 0.1, max: 20, defaultValue: 1.0, placeholder: "1.00" },
+  { id: "lab", label: "Lab", type: "select", options: ["GIA", "AGS", "IGI", "HRD", "Other"], defaultValue: "GIA" },
+  { id: "cutGrade", label: "Cut Grade", type: "select", options: ["Excellent", "Ideal", "Very Good", "Good", "Fair"], defaultValue: "Excellent" },
+  { id: "color", label: "Color", type: "select", options: ["D", "E", "F", "G", "H", "I", "J", "K"], defaultValue: "H" },
+  { id: "clarity", label: "Clarity", type: "select", options: ["FL", "IF", "VVS1", "VVS2", "VS1", "VS2", "SI1", "SI2", "I1"], defaultValue: "VS2" },
+  { id: "tablePct", label: "Table %", type: "number", step: "0.1", min: 45, max: 75, defaultValue: 56.0, required: true, placeholder: "56.0" },
+  { id: "depthPct", label: "Depth %", type: "number", step: "0.1", min: 50, max: 75, defaultValue: 61.8, required: true, placeholder: "61.8" },
+  { id: "crownAngle", label: "Crown Angle", type: "number", step: "0.1", min: 25, max: 45, defaultValue: 34.5, required: true, placeholder: "34.5" },
+  { id: "pavilionAngle", label: "Pavilion Angle", type: "number", step: "0.1", min: 38, max: 43, defaultValue: 40.8, required: true, placeholder: "40.8" },
   {
     id: "girdle",
     label: "Girdle",
     type: "select",
     options: ["Thin", "Thin-Medium", "Medium", "Medium-Slightly Thick", "Slightly Thick", "Very Thin", "Very Thick"],
+    defaultValue: "Medium",
   },
-  { id: "culet", label: "Culet", type: "select", options: ["None", "Very Small", "Small", "Medium", "Large"] },
-  { id: "starPct", label: "Star %", type: "number", step: "1", min: 0, max: 100, placeholder: "50" },
-  { id: "lowerHalvesPct", label: "Lower Halves %", type: "number", step: "1", min: 0, max: 100, placeholder: "78" },
-  { id: "polish", label: "Polish", type: "select", options: ["Excellent", "Very Good", "Good", "Fair"] },
-  { id: "symmetry", label: "Symmetry", type: "select", options: ["Excellent", "Very Good", "Good", "Fair"] },
-  { id: "fluorescence", label: "Fluorescence", type: "select", options: ["None", "Faint", "Medium", "Strong", "Very Strong"] },
+  { id: "culet", label: "Culet", type: "select", options: ["None", "Very Small", "Small", "Medium", "Large"], defaultValue: "None" },
+  { id: "starPct", label: "Star %", type: "number", step: "1", min: 0, max: 100, defaultValue: 50, placeholder: "50" },
+  { id: "lowerHalvesPct", label: "Lower Halves %", type: "number", step: "1", min: 0, max: 100, defaultValue: 78, placeholder: "78" },
+  { id: "polish", label: "Polish", type: "select", options: ["Excellent", "Very Good", "Good", "Fair"], defaultValue: "Excellent" },
+  { id: "symmetry", label: "Symmetry", type: "select", options: ["Excellent", "Very Good", "Good", "Fair"], defaultValue: "Excellent" },
+  { id: "fluorescence", label: "Fluorescence", type: "select", options: ["None", "Faint", "Medium", "Strong", "Very Strong"], defaultValue: "None" },
   { id: "avgDiameterMm", label: "Avg Diameter (mm)", type: "number", step: "0.01", min: 2, max: 20, placeholder: "6.45" },
   { id: "measurements", label: "Measurements (optional)", type: "text", placeholder: "6.40-6.45 x 3.95" },
   { id: "price", label: "Price", type: "number", step: "1", min: 0, placeholder: "7000" },
-  { id: "currency", label: "Currency", type: "select", options: ["USD", "EUR", "GBP", "CAD"] },
+  { id: "currency", label: "Currency", type: "select", options: ["USD", "EUR", "GBP", "CAD"], defaultValue: "USD" },
   { id: "hazyMilky", label: "Hazy / Milky?", type: "checkbox" },
   { id: "cloudsNote", label: "Clouds Note", type: "text", placeholder: "Optional comments" },
 ];
@@ -35,6 +36,17 @@ const benchmarkState = {
   bands: [],
   loaded: false,
   loadError: null,
+};
+
+const SHOW_EXPLAIN = false;
+
+const RESEARCH_CRITERIA = {
+  roundScreening: {
+    table: { min: 52, max: 62 },
+    crownAngle: { min: 31.5, max: 36.5 },
+    pavilionAngle: { min: 40.6, max: 41.8 },
+    hcaLikeMax: 2.5,
+  },
 };
 
 const INPUT_LIMITS = {
@@ -91,6 +103,7 @@ function createField(prefix, field) {
     if (field.step) input.step = field.step;
     if (field.min !== undefined) input.min = String(field.min);
     if (field.max !== undefined) input.max = String(field.max);
+    if (field.defaultValue !== undefined) input.value = String(field.defaultValue);
     if (field.placeholder) input.placeholder = field.placeholder;
   }
 
@@ -362,6 +375,17 @@ function buildSpecSnapshotBlock(evaluation) {
   return block;
 }
 
+function scoreSignal(label, value) {
+  if (label === "Risk") {
+    if (value <= 25) return { text: "Low", toneClass: "tone-good" };
+    if (value <= 45) return { text: "Moderate", toneClass: "tone-warn" };
+    return { text: "High", toneClass: "tone-bad" };
+  }
+  if (value >= 85) return { text: "Strong", toneClass: "tone-good" };
+  if (value >= 70) return { text: "Balanced", toneClass: "tone-warn" };
+  return { text: "Weak", toneClass: "tone-bad" };
+}
+
 function renderMeterRow(label, value) {
   const row = document.createElement("div");
   row.className = "meter-row";
@@ -377,7 +401,9 @@ function renderMeterRow(label, value) {
   bar.appendChild(inner);
 
   const valNode = document.createElement("strong");
-  valNode.textContent = String(value);
+  const signal = scoreSignal(label, value);
+  valNode.className = signal.toneClass;
+  valNode.textContent = `${value} • ${signal.text}`;
 
   row.append(labelNode, bar, valNode);
   return row;
@@ -411,6 +437,106 @@ function renderExplainSection(title, components = []) {
 
   section.append(heading, list);
   return section;
+}
+
+function buildQuickReadBlock(evaluation) {
+  const block = document.createElement("section");
+  block.className = "status-block quick-read";
+  const heading = document.createElement("h4");
+  heading.textContent = "At a Glance";
+  block.appendChild(heading);
+
+  const sparkleScore = Math.round((evaluation.brightness.score + evaluation.fire.score) / 2);
+  const sparkleSignal = scoreSignal("Sparkle", sparkleScore);
+  const riskSignal = scoreSignal("Risk", evaluation.risk.score);
+  const valueLabel = evaluation.value.label || "No value data";
+  const valueTone = evaluation.value.status === "below"
+    ? "tone-good"
+    : evaluation.value.status === "fair"
+      ? "tone-warn"
+      : evaluation.value.status === "above"
+        ? "tone-bad"
+        : "tone-warn";
+
+  const grid = document.createElement("div");
+  grid.className = "quick-read-grid";
+
+  const items = [
+    { label: "Sparkle", value: `${sparkleScore}/100`, note: sparkleSignal.text, toneClass: sparkleSignal.toneClass },
+    { label: "Risk", value: `${evaluation.risk.score}/100`, note: riskSignal.text, toneClass: riskSignal.toneClass },
+    { label: "Value", value: valueLabel, note: "Price positioning", toneClass: valueTone },
+  ];
+
+  items.forEach((item) => {
+    const cell = document.createElement("div");
+    cell.className = "quick-read-cell";
+    cell.innerHTML = `<span>${item.label}</span><strong class="${item.toneClass}">${item.value}</strong><em>${item.note}</em>`;
+    grid.appendChild(cell);
+  });
+
+  block.appendChild(grid);
+  return block;
+}
+
+function evaluateRangeStatus(value, min, max, nearTolerance = 0.2) {
+  if (value === null || value === undefined || Number.isNaN(value)) return "unknown";
+  if (value >= min && value <= max) return "pass";
+  if (value >= min - nearTolerance && value <= max + nearTolerance) return "near";
+  return "fail";
+}
+
+function appendCriteriaItem(list, label, status, detail) {
+  const item = document.createElement("li");
+  const badgeClass = status === "unknown" ? "status-near" : gradeClass(status);
+  const badgeText = status === "unknown" ? "Unknown" : status === "pass" ? "Pass" : status === "near" ? "Borderline" : "Fail";
+  item.innerHTML = `<span class="criteria-badge ${badgeClass}">${badgeText}</span> ${label}: ${detail}`;
+  list.appendChild(item);
+}
+
+function buildResearchCriteriaBlock(evaluation) {
+  const block = document.createElement("section");
+  block.className = "status-block criteria-block";
+  const heading = document.createElement("h4");
+  heading.textContent = "Research-Based Screening (Round)";
+  block.appendChild(heading);
+
+  const note = document.createElement("p");
+  note.className = "note";
+  note.textContent = "Uses GIA proportion screening ranges plus HCA-style rejection threshold.";
+  block.appendChild(note);
+
+  const list = document.createElement("ul");
+  list.className = "criteria-list";
+
+  const isRound = String(evaluation.input.shape || "").toLowerCase() === "round";
+  appendCriteriaItem(list, "Shape", isRound ? "pass" : "fail", isRound ? "Round" : "Non-round");
+
+  const tableRange = RESEARCH_CRITERIA.roundScreening.table;
+  const tableStatus = evaluateRangeStatus(evaluation.input.tablePct, tableRange.min, tableRange.max, 0.4);
+  appendCriteriaItem(list, "Table %", tableStatus, `${formatMetric(evaluation.input.tablePct, 1)} (target ${tableRange.min}-${tableRange.max})`);
+
+  const crownRange = RESEARCH_CRITERIA.roundScreening.crownAngle;
+  const crownStatus = evaluateRangeStatus(evaluation.input.crownAngle, crownRange.min, crownRange.max, 0.2);
+  appendCriteriaItem(list, "Crown angle", crownStatus, `${formatMetric(evaluation.input.crownAngle, 1)} (target ${crownRange.min}-${crownRange.max})`);
+
+  const pavilionRange = RESEARCH_CRITERIA.roundScreening.pavilionAngle;
+  const pavilionStatus = evaluateRangeStatus(evaluation.input.pavilionAngle, pavilionRange.min, pavilionRange.max, 0.1);
+  appendCriteriaItem(list, "Pavilion angle", pavilionStatus, `${formatMetric(evaluation.input.pavilionAngle, 1)} (target ${pavilionRange.min}-${pavilionRange.max})`);
+
+  const hcaMax = RESEARCH_CRITERIA.roundScreening.hcaLikeMax;
+  const hcaStatus = evaluation.hcaLike.available
+    ? (evaluation.hcaLike.score <= hcaMax ? "pass" : evaluation.hcaLike.score <= hcaMax + 1 ? "near" : "fail")
+    : "unknown";
+  const hcaDetail = evaluation.hcaLike.available
+    ? `${formatMetric(evaluation.hcaLike.score, 1)} (target <= ${hcaMax})`
+    : "Not available for non-round";
+  appendCriteriaItem(list, "HCA-like score", hcaStatus, hcaDetail);
+
+  const internalStatus = evaluation.passMaximumShineZone ? "pass" : "fail";
+  appendCriteriaItem(list, "Internal max-shine checklist", internalStatus, evaluation.passMaximumShineZone ? "Pass" : "One or more misses");
+
+  block.appendChild(list);
+  return block;
 }
 
 function buildHcaLikeBlock(hcaLike) {
@@ -522,14 +648,18 @@ function renderReportCard(evaluation, labelText = "Diamond", inputDiagnostics = 
   meterGroup.appendChild(renderMeterRow("Fire", evaluation.fire.score));
   meterGroup.appendChild(renderMeterRow("Risk", evaluation.risk.score));
 
+  const quickReadBlock = buildQuickReadBlock(evaluation);
   const hcaBlock = buildHcaLikeBlock(evaluation.hcaLike);
+  const researchCriteriaBlock = buildResearchCriteriaBlock(evaluation);
   const snapshotBlock = buildSpecSnapshotBlock(evaluation);
-  meterGroup.after(hcaBlock);
+  meterGroup.after(quickReadBlock);
+  quickReadBlock.after(hcaBlock);
   hcaBlock.after(snapshotBlock);
+  snapshotBlock.after(researchCriteriaBlock);
 
   const qualityBlock = buildInputQualityBlock(inputDiagnostics);
   if (qualityBlock) {
-    snapshotBlock.after(qualityBlock);
+    researchCriteriaBlock.after(qualityBlock);
   }
 
   const checklist = card.querySelector(".checklist");
@@ -572,31 +702,36 @@ function renderReportCard(evaluation, labelText = "Diamond", inputDiagnostics = 
   const valueNode = card.querySelector(".value");
   const value = evaluation.value;
   const ppc = value.pricePerCarat ? `${value.pricePerCarat.toLocaleString()} ${evaluation.input.currency}/ct` : "n/a";
-  valueNode.textContent = `${value.label}. ${value.explanation} Price/ct: ${ppc}.`;
+  valueNode.textContent = `${value.label} • ${ppc}. ${value.explanation}`;
 
-  const explain = card.querySelector(".explain-content");
-  const overview = document.createElement("section");
-  overview.className = "explain-section";
-  const heading = document.createElement("h5");
-  heading.textContent = "Overall";
-  const list = document.createElement("ul");
-  const overallItem = document.createElement("li");
-  overallItem.textContent = `${evaluation.overall.explanation} Thresholds: ${evaluation.overall.thresholds}.`;
-  list.appendChild(overallItem);
-  overview.append(heading, list);
+  const explainWrap = card.querySelector(".explain");
+  if (SHOW_EXPLAIN && explainWrap) {
+    const explain = card.querySelector(".explain-content");
+    const overview = document.createElement("section");
+    overview.className = "explain-section";
+    const heading = document.createElement("h5");
+    heading.textContent = "Overall";
+    const list = document.createElement("ul");
+    const overallItem = document.createElement("li");
+    overallItem.textContent = `${evaluation.overall.explanation} Thresholds: ${evaluation.overall.thresholds}.`;
+    list.appendChild(overallItem);
+    overview.append(heading, list);
 
-  explain.appendChild(overview);
-  explain.appendChild(renderExplainSection("Brightness components", evaluation.brightness.components));
-  explain.appendChild(renderExplainSection("Fire components", evaluation.fire.components));
-  explain.appendChild(renderExplainSection("Risk components", evaluation.risk.components));
-  explain.appendChild(renderExplainSection(
-    "HCA-like components",
-    evaluation.hcaLike.components.map((item) => ({
-      delta: -item.points,
-      threshold: item.threshold,
-      explanation: `${item.name}: ${item.explanation}`,
-    }))
-  ));
+    explain.appendChild(overview);
+    explain.appendChild(renderExplainSection("Brightness components", evaluation.brightness.components));
+    explain.appendChild(renderExplainSection("Fire components", evaluation.fire.components));
+    explain.appendChild(renderExplainSection("Risk components", evaluation.risk.components));
+    explain.appendChild(renderExplainSection(
+      "HCA-like components",
+      evaluation.hcaLike.components.map((item) => ({
+        delta: -item.points,
+        threshold: item.threshold,
+        explanation: `${item.name}: ${item.explanation}`,
+      }))
+    ));
+  } else {
+    explainWrap?.remove();
+  }
 
   return fragment;
 }

@@ -18,12 +18,23 @@ Deterministic, explainable diamond analysis app for GitHub Pages.
   - Red-flag list
   - Spread/face-up indicator (when carat + diameter/measurements are present)
   - Value check from local editable benchmarks
-- Explainable scoring:
-  - Every component shows point delta, threshold used, and reason.
+- Research-based screening panel (round):
+  - GIA proportion screening ranges
+  - HCA-style reject threshold (`<= 2.5` target)
 - Compare mode:
-  - Winner by category (Brightness/Fire/Risk/Value)
+  - Winner by category (Brightness/Fire/Risk/HCA-like/Value)
   - Deterministic `Too close to call` when score gap is 3 or less
   - Top 3 pros/cons per diamond
+
+## Default Prefill Profile
+
+The form now starts with a practical default profile to speed up testing:
+
+- Round, GIA, Excellent, H / VS2
+- Table 56, Depth 61.8, Crown 34.5, Pavilion 40.8
+- Girdle Medium, Culet None
+- Star 50, Lower Halves 78
+- Polish/Symmetry Excellent, Fluorescence None
 
 ## Maximum Shine Zone Rubric
 
@@ -84,7 +95,7 @@ Option 1 (quick): open `index.html` in a browser.
 Option 2 (recommended): run a tiny local static server so benchmark loading works reliably.
 
 ```bash
-cd diamond_checker
+cd diamond_checker/my_diamond_pal
 python -m http.server 8080
 ```
 

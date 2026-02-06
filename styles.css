@@ -370,6 +370,11 @@ textarea::placeholder {
   gap: 0.5rem;
 }
 
+.meter-row strong {
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
 .meter-bar {
   height: 7px;
   border-radius: 999px;
@@ -399,6 +404,40 @@ textarea::placeholder {
   margin: 0;
   color: #d9d3c8;
   font-size: 0.93rem;
+}
+
+.quick-read-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.quick-read-cell {
+  border: 1px solid rgba(212, 182, 108, 0.2);
+  border-radius: 10px;
+  background: rgba(18, 18, 22, 0.72);
+  padding: 0.45rem 0.55rem;
+}
+
+.quick-read-cell span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.quick-read-cell strong {
+  display: block;
+  font-size: 1rem;
+  margin-top: 0.1rem;
+}
+
+.quick-read-cell em {
+  display: block;
+  font-style: normal;
+  font-size: 0.78rem;
+  color: var(--muted);
 }
 
 .snapshot-grid {
@@ -448,6 +487,33 @@ textarea::placeholder {
 
 .status-fail {
   color: var(--bad);
+}
+
+.criteria-list {
+  list-style: none;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.38rem;
+}
+
+.criteria-list li {
+  font-size: 0.88rem;
+  color: #e4ddcf;
+}
+
+.criteria-badge {
+  display: inline-block;
+  min-width: 68px;
+  text-align: center;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  padding: 0.08rem 0.42rem;
+  margin-right: 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .hca-list {
@@ -574,6 +640,10 @@ textarea::placeholder {
 
   .snapshot-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quick-read-grid {
+    grid-template-columns: 1fr;
   }
 
   .meter-row {
